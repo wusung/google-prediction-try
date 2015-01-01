@@ -32,13 +32,34 @@ import sys
 import json
 
 from apiclient import discovery
+from apiclient.discovery import build as discovery_build
+from apiclient.errors import HttpError
+from apiclient.http import MediaFileUpload
+from apiclient.http import MediaIoBaseDownload
+from json import dumps as json_dumps
+from oauth2client.client import flow_from_clientsecrets
+from oauth2client.file import Storage as CredentialStorage
+from oauth2client.tools import run as run_oauth2
 from oauth2client import file
 from oauth2client import client
 from oauth2client import tools
+from flyberry.machine_learning.google_prediction import GooglePrediction
 
 # Define sample variables.
 _BUCKET_NAME = 'flyberry'
 _API_VERSION = 'v1'
+
+# Retry transport and file IO errors.
+RETRYABLE_ERRORS = (httplib2.HttpLib2Error, IOError)
+
+# Number of times to retry failed downloads.
+NUM_RETRIES = 5
+
+# Number of bytes to send/receive in each request.
+CHUNKSIZE = 2 * 1024 * 1024
+
+# Mimetype to use if one can't be guessed from the file extension.
+DEFAULT_MIMETYPE = 'application/octet-stream'
 
 # Parser for command-line arguments.
 parser = argparse.ArgumentParser(
@@ -64,15 +85,14 @@ FLOW = client.flow_from_clientsecrets(CLIENT_SECRETS,
       'https://www.googleapis.com/auth/devstorage.read_write',
     ],
     message=tools.message_if_missing(CLIENT_SECRETS))
-
-def create_bucket(argv):
-  """docstring for create_bucket"""
-  flags = parser.parse_args(argv[1:])
-  storage = file.Storage("sample.dat")
-  credentials = storage.get()
-  if credentials is None or credentials.invalid:
-    credentials = tols.run_flow(FLOW, storage, flags)
-
+    
+googlePrediction = GooglePrediction()
+def get_authenticated_service(argv):
+    return googlePrediction.get_authenticated_service(parser.parse_args(argv[1:]))
+  
+def upload():
+    googlePrediction.upload(name='language_id.txt', directory='./')
+                                                          
 def main(argv):
   # Parse the command-line flags.
   flags = parser.parse_args(argv[1:])
@@ -112,5 +132,6 @@ def main(argv):
       "the application to re-authorize")
 
 if __name__ == '__main__':
-  main(sys.argv)
+    upload()
+    
 # [END all]
