@@ -1,7 +1,7 @@
 .hgignore
 node_modules
 .c9revisions
-.c9
+.c9/
 .DS_Store
 Thumbs.db
 
