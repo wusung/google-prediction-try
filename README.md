@@ -1,37 +1,23 @@
+### Prediction Reference
 
-     ,-----.,--.                  ,--. ,---.   ,--.,------.  ,------.
-    '  .--./|  | ,---. ,--.,--. ,-|  || o   \  |  ||  .-.  \ |  .---'
-    |  |    |  || .-. ||  ||  |' .-. |`..'  |  |  ||  |  \  :|  `--, 
-    '  '--'\|  |' '-' ''  ''  '\ `-' | .'  /   |  ||  '--'  /|  `---.
-     `-----'`--' `---'  `----'  `---'  `--'    `--'`-------' `------'
-    ----------------------------------------------------------------- 
+# Prerequist
 
+# Upload example 1: Upload local file to Google Storage
 
-Welcome to your Django project on Cloud9 IDE!
-
-Your Django project is already fully setup. Just click the "Run" button to start
-the application. On first run you will be asked to create an admin user. You can
-access your application from 'https://google-prediction-api-wusung.c9.io/' and the admin page from 
-'https://google-prediction-api-wusung.c9.io/admin'.
-
-## Starting from the Terminal
-
-In case you want to run your Django application from the terminal just run:
-
-1) Run syncdb command to sync models to database and create Django's default superuser and auth system
-
-    $ python manage.py syncdb
-
-2) Run Django
-
-    $ python manage.py runserver $IP:$PORT
+    googlePrediction = GooglePrediction()
+    googlePrediction.upload(name='creature.txt', directory='./')
     
-## Support & Documentation
+# Upload example 2: Upload web file to Google Storage
 
-Django docs can be found at https://www.djangoproject.com/
+    googlePrediction = GooglePrediction()
+    googlePrediction.upload(name='creature.txt', directory='https://www.dropbox.com/s/vt3w7dlaey8kr27/IF1404.txt?dl=1')
 
-You may also want to follow the Django tutorial to create your first application:
-https://docs.djangoproject.com/en/1.7/intro/tutorial01/
+# Train example:
 
-Visit http://docs.c9.io for support, or to learn more about using Cloud9 IDE.
-To watch some training videos, visit http://www.youtube.com/user/c9ide
+    googlePrediction = GooglePrediction()
+    googlePrediction.train(data='flyberry/creature.txt', model_name='Creature')
+
+# Prediction example: 
+
+    googlePrediction = GooglePrediction()
+    p = googlePrediction.predict(model='Creature', sample=(77.50,-55.33,'Animal'))
