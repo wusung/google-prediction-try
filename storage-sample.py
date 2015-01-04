@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # [START all]
-"""Command-line skeleton application for Cloud Storage API.
+"""Command-line fskeleton application for Cloud Storage API.
 Usage:
   $ python storage-sample.py
 
@@ -91,7 +91,8 @@ def get_authenticated_service(argv):
     return googlePrediction.get_authenticated_service(parser.parse_args(argv[1:]))
   
 def upload():
-    googlePrediction.upload(name='language_id.txt', directory='./')
+    googlePrediction.upload(name='language_id.txt', directory='https://www.dropbox.com/s/vt3w7dlaey8kr27/IF1404.txt?dl=1')
+    googlePrediction.upload(name='README.md', directory='./')
                                                           
 def main(argv):
   # Parse the command-line flags.
@@ -132,6 +133,8 @@ def main(argv):
       "the application to re-authorize")
 
 if __name__ == '__main__':
-    upload()
+    googlePrediction.upload(name='language_id.txt', directory='https://www.dropbox.com/s/vt3w7dlaey8kr27/IF1404.txt?dl=1')
+    googlePrediction.upload(name='test.csv', directory='https://www.dropbox.com/s/vt3w7dlaey8kr27/IF1404.txt?dl=1')
+    googlePrediction.upload(name='README.md', directory='./')
     
 # [END all]

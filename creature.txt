@@ -1,0 +1,8 @@
+Name,Category,Height,Weight
+Pig,Animal,117.50,-255.33
+Dog,Animal,80.00,-25.33
+Elephant,Animal,200.50,-3055.33
+Person,Animal,180,-100.33
+Cat,Animal,80.00,-25.33
+Mouse,Animal,200.50,-3055.33
+Fish,Animal,200.50,-3055.33

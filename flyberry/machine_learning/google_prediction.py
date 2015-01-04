@@ -4,11 +4,15 @@ import os
 import sys
 import json
 import time
+import urllib
+import urllib2
+import pprint
 
 from apiclient import discovery
 from apiclient.discovery import build as discovery_build
 from apiclient.errors import HttpError
 from apiclient.http import MediaFileUpload
+from apiclient.http import MediaInMemoryUpload
 from apiclient.http import MediaIoBaseDownload
 from json import dumps as json_dumps
 from oauth2client.client import flow_from_clientsecrets
@@ -21,6 +25,8 @@ from oauth2client import tools
 # Define sample variables.
 _BUCKET_NAME = 'flyberry'
 _API_VERSION = 'v1'
+_PREDICTION_API_VERSION = 'v1.6'
+_PROJECT = 'foxdie-service'
 
 # Retry transport and file IO errors.
 RETRYABLE_ERRORS = (httplib2.HttpLib2Error, IOError)
@@ -59,6 +65,7 @@ FLOW = client.flow_from_clientsecrets(CLIENT_SECRETS,
       'https://www.googleapis.com/auth/devstorage.full_control',
       'https://www.googleapis.com/auth/devstorage.read_only',
       'https://www.googleapis.com/auth/devstorage.read_write',
+      'https://www.googleapis.com/auth/prediction',
     ],
     message=tools.message_if_missing(CLIENT_SECRETS))
     
@@ -72,17 +79,24 @@ with information from the APIs Console
 """ % os.path.abspath(os.path.join(os.path.dirname(__file__),
                                    CLIENT_SECRETS))
                                    
+                                   
+                                   
 class GooglePrediction:
-        
-    def get_authenticated_service(self):
-		storage = file.Storage(CREDENTIALS_FILE)
-		credentials = storage.get()
-		if credentials is None or credentials.invalid:
-		    parser = argparse.ArgumentParser(parents=[tools.argparser])
-		    flags = parser.parse_args()
-		    credentials = tools.run_flow(FLOW, storage, flags)
+    
+    @staticmethod
+    def get_credentials():
+        storage = CredentialStorage(CREDENTIALS_FILE)
+        credentials = storage.get()
+        if credentials is None or credentials.invalid:
+            parser = argparse.ArgumentParser(parents=[tools.argparser])
+            flags = parser.parse_args()
+            credentials = tools.run_flow(FLOW, storage, flags)
+        return credentials
 		
+    @staticmethod
+    def get_authenticated_service():
 		
+		credentials = GooglePrediction.get_credentials()
 		# Create an httplib2.Http object to handle our HTTP requests and authorize it
 		# with our good Credentials.
 		http = httplib2.Http()
@@ -90,28 +104,47 @@ class GooglePrediction:
 		
 		# Construct the service object for the interacting with the Cloud Storage API.
 		return discovery.build('storage', _API_VERSION, http=http)
+		
+    @staticmethod
+    def get_predication_service():
+        credentials = GooglePrediction.get_credentials()
+        # Create an httplib2.Http object to handle our HTTP requests and authorize it
+        # with our good Credentials.
+        http = httplib2.Http()
+        http = credentials.authorize(http)
         
+        # Construct the service object for the interacting with the Cloud Storage API.
+        return discovery.build('prediction', _PREDICTION_API_VERSION, http=http)
+    
     def upload(self, name, directory):
         
         assert name and directory
         filename = name
-
+        
         now = time.time()
         bucket_name = _BUCKET_NAME
         object_name = name
         
-        service = GooglePrediction().get_authenticated_service()
-    
+        service = GooglePrediction.get_authenticated_service()
+        
         print 'Building upload request...'
-        media = MediaFileUpload(filename, chunksize=CHUNKSIZE, resumable=True)
-        if not media.mimetype():
-            media = MediaFileUpload(filename, DEFAULT_MIMETYPE, resumable=True)
+        if directory.startswith('http'):
+            url = directory
+            req = urllib2.Request(url, headers={'User-Agent' : "Magic Browser"})
+            response = urllib2.urlopen(req)
+            the_page = response.read()
+            media = MediaInMemoryUpload(the_page, 'text/plain', chunksize=CHUNKSIZE, resumable=True)
+        else:
+            media = MediaFileUpload(filename, chunksize=CHUNKSIZE, resumable=True)
+            if not media.mimetype():
+                media = MediaFileUpload(filename, DEFAULT_MIMETYPE, resumable=True)
+        
         request = service.objects().insert(bucket=bucket_name, name=object_name,
                                            media_body=media)
-    
+                                           
         print 'Uploading file: %s to bucket: %s object: %s ' % (filename, bucket_name,
                                                                 object_name)
-    
+                                                                
         progressless_iters = 0
         response = None
         while response is None:
@@ -119,27 +152,77 @@ class GooglePrediction:
             try:
                 progress, response = request.next_chunk()
                 if progress:
-                  print_with_carriage_return('Upload %d%%' % (100 * progress.progress()))
+                    print_with_carriage_return('Upload %d%%' % (100 * progress.progress()))
             except HttpError, err:
                 error = err
                 if err.resp.status < 500:
                   raise
             except RETRYABLE_ERRORS, err:
                 error = err
-        
+                
             if error:
                 progressless_iters += 1
                 handle_progressless_iter(error, progressless_iters)
             else:
                 progressless_iters = 0
-    
+                
         print '\nUpload complete!'
-    
+        
         print 'Uploaded Object:'
-        print json_dumps(response, indent=2)        
-    
+        print json_dumps(response, indent=2)
+        
     def train(self, data, model_name):
-        print "train1"
-
+        print 'start to train...'
+        # Get access to the Prediction API.
+        service = GooglePrediction.get_predication_service()
+        papi = service.trainedmodels()
+        # Start training request on a data set.
+        print 'Submitting model training request'
+        body = {'project': _PROJECT,'id': model_name, 'storageDataLocation': data}
+        start = papi.insert(project=_PROJECT, body=body).execute()
+        print 'Training results:'
+        pprint.pprint(start)
+        
     def predict(self, model, sample):
-        print "predict1"
+        if not isinstance(sample, (list, tuple)):
+            input_data = [sample]
+        else:
+            input_data = sample
+            
+        body = {'input': {'csvInstance': input_data}}
+        
+        return GooglePrediction.get_predication_service().trainedmodels().predict(
+			project=_PROJECT,
+			id=model,
+			body=body
+		).execute()
+		
+    def list(self, model):
+        service = GooglePrediction.get_predication_service()
+        papi = service.trainedmodels()
+        
+        # List models.
+        print_header('Fetching list of first ten models')
+        result = papi.list(project=_PROJECT, maxResults=10).execute()
+        print 'List results:'
+        pprint.pprint(result)
+        
+    def get(self, model):
+        service = GooglePrediction.get_predication_service()
+        papi = service.trainedmodels()
+        print_header('Get model.')
+        result = papi.get(project=_PROJECT, id=model).execute()
+        print 'Get results:'
+        pprint.pprint(result)
+        
+def print_with_carriage_return(s):
+    sys.stdout.write('\r' + s)
+    sys.stdout.flush()
+
+def print_header(line):
+    '''Format and print header block sized to length of line'''
+    header_str = '='
+    header_line = header_str * len(line)
+    print '\n' + header_line
+    print line
+    print header_line
