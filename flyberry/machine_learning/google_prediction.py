@@ -23,10 +23,11 @@ from oauth2client import client
 from oauth2client import tools
 
 # Define sample variables.
-_BUCKET_NAME = 'flyberry'
-_API_VERSION = 'v1'
+_BUCKET_NAME            = 'flyberry'
+_API_VERSION            = 'v1'
 _PREDICTION_API_VERSION = 'v1.6'
-_PROJECT = 'foxdie-service'
+_PROJECT                = 'foxdie-service'
+_PROJECT_NUMBER         = '890531800530'
 
 # Retry transport and file IO errors.
 RETRYABLE_ERRORS = (httplib2.HttpLib2Error, IOError)
@@ -45,7 +46,6 @@ parser = argparse.ArgumentParser(
     description=__doc__,
     formatter_class=argparse.RawDescriptionHelpFormatter,
     parents=[tools.argparser])
-
 
 # CLIENT_SECRETS is name of a file containing the OAuth 2.0 information for this
 # application, including client_id and client_secret. You can see the Client ID
@@ -187,15 +187,21 @@ class GooglePrediction:
         if not isinstance(sample, (list, tuple)):
             input_data = [sample]
         else:
-            input_data = sample
-            
-        body = {'input': {'csvInstance': input_data}}
-        
-        return GooglePrediction.get_predication_service().trainedmodels().predict(
-			project=_PROJECT,
-			id=model,
-			body=body
-		).execute()
+            if isinstance(sample, list):
+                for item in sample:
+                    input_data = item
+                    body = {'input': {'csvInstance': input_data}}
+                    result = GooglePrediction.get_predication_service().trainedmodels().predict(
+                        project = _PROJECT_NUMBER, id=model, body=body).execute()
+                    print result
+            else:
+                input_data = sample
+                body = {'input': {'csvInstance': input_data}}
+                return GooglePrediction.get_predication_service().trainedmodels().predict(
+			        #project=_PROJECT,
+        			project = _PROJECT_NUMBER,
+        			id=model,
+        			body=body).execute()
 		
     def list(self, model):
         service = GooglePrediction.get_predication_service()

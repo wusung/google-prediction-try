@@ -41,9 +41,14 @@ googlePrediction = GooglePrediction()
 # print p
 
 p = googlePrediction.get(model='Creature')
+p = googlePrediction.predict(model='Creature', sample=[
+    (77.50,-55.33,'Animal'), 
+    (78.00,-55.33,'Animal'),
+    (78.50,-55.33,'Animal')])
+print p
 p = googlePrediction.predict(model='Creature', sample=(77.50,-55.33,'Animal'))
 print p
-p = googlePrediction.predict(model='Creature', sample=(78.00,-55.33,'Animal'))
-print p
-p = googlePrediction.predict(model='Creature', sample=(78.50,-55.33,'Animal'))
-print p
+# p = googlePrediction.predict(model='Creature', sample=(78.00,-55.33,'Animal'))
+# print p
+# p = googlePrediction.predict(model='Creature', sample=(78.50,-55.33,'Animal'))
+# print p
