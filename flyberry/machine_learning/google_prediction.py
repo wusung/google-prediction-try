@@ -192,13 +192,13 @@ class GooglePrediction:
                     input_data = item
                     body = {'input': {'csvInstance': input_data}}
                     result = GooglePrediction.get_predication_service().trainedmodels().predict(
+                        fields = 'outputLabel,outputValue',
                         project = _PROJECT_NUMBER, id=model, body=body).execute()
                     print result
             else:
                 input_data = sample
                 body = {'input': {'csvInstance': input_data}}
                 return GooglePrediction.get_predication_service().trainedmodels().predict(
-			        #project=_PROJECT,
         			project = _PROJECT_NUMBER,
         			id=model,
         			body=body).execute()
